@@ -1,0 +1,48 @@
+name: Build & Release Windows App
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags (e.g., v1.0.0-beta.1)
+
+# Permissions needed to create a GitHub Release
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release for Windows
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.20'
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install Wails CLI
+      run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+    - name: Build Application
+      run: wails build -clean
+
+    - name: Rename Executable for Release
+      run: Rename-Item "build\bin\jazasort.exe" "JazaSort.exe"
+
+    - name: Create Release and Upload Executable
+      uses: softprops/action-gh-release@v2
+      with:
+        files: JazaSort.exe
+        draft: false
+        prerelease: contains(github.ref, 'beta') || contains(github.ref, 'alpha')
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
