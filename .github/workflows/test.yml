@@ -24,11 +24,12 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Backend Tests
-      run: go test -v -race ./...
-
-    - name: Frontend Tests
+    - name: Frontend Tests & Build
       working-directory: ./frontend
       run: |
         npm ci
+        npm run build
         npm run test -- --run
+
+    - name: Backend Tests
+      run: go test -v -race ./...
