@@ -37,10 +37,15 @@ jobs:
     - name: Rename Executable for Release
       run: Rename-Item "build\bin\jazasort.exe" "JazaSort.exe"
 
+    - name: Create ZIP Archive
+      run: Compress-Archive -Path "JazaSort.exe" -DestinationPath "JazaSort-Windows.zip"
+
     - name: Create Release and Upload Executable
       uses: softprops/action-gh-release@v2
       with:
-        files: JazaSort.exe
+        files: |
+          JazaSort.exe
+          JazaSort-Windows.zip
         draft: false
         prerelease: contains(github.ref, 'beta') || contains(github.ref, 'alpha')
         generate_release_notes: true

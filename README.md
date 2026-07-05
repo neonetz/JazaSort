@@ -17,7 +17,7 @@ Built with **Golang** (Wails) and **React** (Tailwind CSS), it runs as a native,
 **You do not need to install Go, Node.js, or compile anything.**
 
 ### 📥 1. Download
-Go to the [**Releases Page**](https://github.com/yourusername/JazaSort/releases) and download the latest `JazaSort.exe`.
+Go to the [**Releases Page**](https://github.com/neonetz/JazaSort/releases) and download the latest `JazaSort.exe` or `JazaSort-Windows.zip`.
 
 > 🛡️ **TRUST & SECURITY:** Our executables are 100% safely compiled and released directly via GitHub Actions CI/CD. No manual local builds are uploaded, ensuring completely sterile, tamper-proof, and virus-free binaries.
 
