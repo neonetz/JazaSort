@@ -17,12 +17,14 @@ Built with **Golang** (Wails) and **React** (Tailwind CSS), it runs as a native,
 **You do not need to install Go, Node.js, or compile anything.**
 
 ### 📥 1. Download
-Go to the [**Releases Page**](https://github.com/neonetz/JazaSort/releases) and download the latest `JazaSort.exe` or `JazaSort-Windows.zip`.
+Go to the [**Releases Page**](https://github.com/neonetz/JazaSort/releases) and choose your preferred version:
+- **`JazaSort-Installer.exe`** (Recommended) - Install JazaSort permanently on your PC with a Start Menu shortcut.
+- **`JazaSort-Portable.exe`** (or `.zip`) - Run instantly without installing.
 
 > 🛡️ **TRUST & SECURITY:** Our executables are 100% safely compiled and released directly via GitHub Actions CI/CD. No manual local builds are uploaded, ensuring completely sterile, tamper-proof, and virus-free binaries.
 
 ### ▶️ 2. Run
-Double-click `JazaSort.exe`. No installation wizard, no admin rights required. It's a **portable** application.
+Double-click your downloaded file to launch or install JazaSort.
 
 ### 🧹 3. Sort Your Files
 1. Click **"Choose Folder..."** and select a messy folder (e.g., `Downloads`).

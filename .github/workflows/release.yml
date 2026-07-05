@@ -28,23 +28,29 @@ jobs:
       with:
         node-version: '22'
 
+    - name: Install NSIS
+      run: choco install nsis -y
+
     - name: Install Wails CLI
       run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-    - name: Build Application
-      run: wails build -clean
+    - name: Build Application (Portable & Installer)
+      run: wails build -nsis -clean
 
-    - name: Rename Executable for Release
-      run: Rename-Item "build\bin\jazasort.exe" "JazaSort.exe"
+    - name: Rename Executables for Release
+      run: |
+        Rename-Item "build\bin\jazasort.exe" "JazaSort-Portable.exe"
+        Rename-Item "build\bin\*-installer.exe" "JazaSort-Installer.exe"
 
-    - name: Create ZIP Archive
-      run: Compress-Archive -Path "JazaSort.exe" -DestinationPath "JazaSort-Windows.zip"
+    - name: Create ZIP Archive for Portable Version
+      run: Compress-Archive -Path "JazaSort-Portable.exe" -DestinationPath "JazaSort-Windows.zip"
 
-    - name: Create Release and Upload Executable
+    - name: Create Release and Upload Artifacts
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          JazaSort.exe
+          JazaSort-Portable.exe
+          JazaSort-Installer.exe
           JazaSort-Windows.zip
         draft: false
         prerelease: contains(github.ref, 'beta') || contains(github.ref, 'alpha')
