@@ -39,10 +39,10 @@ jobs:
     - name: Build Application (Portable & Installer)
       run: wails build -nsis -clean
 
-    - name: Rename Executables for Release
+    - name: Move and Rename Executables for Release
       run: |
-        Rename-Item "build\bin\jazasort.exe" "JazaSort-Portable.exe"
-        Rename-Item "build\bin\*-installer.exe" "JazaSort-Installer.exe"
+        Move-Item "build\bin\jazasort.exe" "JazaSort-Portable.exe"
+        Move-Item "build\bin\*-installer.exe" "JazaSort-Installer.exe"
 
     - name: Create ZIP Archive for Portable Version
       run: Compress-Archive -Path "JazaSort-Portable.exe" -DestinationPath "JazaSort-Windows.zip"
