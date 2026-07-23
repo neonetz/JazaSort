@@ -12,6 +12,8 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            select_folder,
+            select_target_folder,
             get_config,
             reset_config,
             save_config,

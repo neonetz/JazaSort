@@ -1,3 +1,8 @@
+/**
+ * App Component - JazaSort Desktop Application
+ * Main user interface for file sorting, duplicate cleanup, and lifetime analytics.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   SelectFolder,
@@ -25,6 +30,7 @@ import './App.css';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
+// Plugin to render total items count in center of doughnut chart
 const centerTextPlugin: Plugin<'doughnut'> = {
   id: 'centerText',
   beforeDraw: function (chart) {
@@ -70,6 +76,7 @@ interface DialogState {
   onConfirm?: () => void;
 }
 
+// Duplicate File Row Item Component
 const DuplicateRow = React.memo(({ file, isChecked, onToggle }: any) => (
   <label className="flex items-start gap-3 p-3 hover:bg-[#27354f] bg-[#0f172a] rounded-lg cursor-pointer transition-colors border border-transparent hover:border-slate-600">
     <input type="checkbox" className="mt-1 w-4 h-4 rounded bg-slate-900 border-slate-600 text-emerald-500 focus:ring-emerald-500" checked={isChecked} onChange={() => onToggle(file.path)} />
@@ -81,6 +88,7 @@ const DuplicateRow = React.memo(({ file, isChecked, onToggle }: any) => (
 ));
 
 export default function App() {
+  // Active Tab: sorter | cleaner | dashboard
   const [activeTab, setActiveTab] = useState<'sorter' | 'cleaner' | 'dashboard'>('sorter');
 
   // Sorting State
@@ -91,24 +99,21 @@ export default function App() {
   const [progress, setProgress] = useState<any>(null);
   const [canUndo, setCanUndo] = useState<boolean>(false);
   const [lifetimeStats, setLifetimeStats] = useState<any | null>(null);
-  const [lastActionTime, setLastActionTime] = useState<string>('');
 
-  // Favorites & Config State
+  // Favorite Folders & Config State
   const [favoriteFolders, setFavoriteFolders] = useState<string[]>([]);
 
-  // System Warning State
+  // System Warning State & 10-Second Delay Modals
   const [sysWarning, setSysWarning] = useState({ isOpen: false, countdown: 10 });
   const [disableWarningModal, setDisableWarningModal] = useState({ isOpen: false, countdown: 10 });
   const timerRef = useRef<any>(null);
   const disableTimerRef = useRef<any>(null);
 
-  // Help Panel
+  // Help & Custom Dialog Modals
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-
-  // Custom Dialog State
   const [dialog, setDialog] = useState<DialogState>({ isOpen: false, type: 'alert', title: '', message: '' });
 
-  // Cleaner State
+  // Duplicate Cleaner State
   const [cleanerFolder, setCleanerFolder] = useState<string>('');
   const [duplicates, setDuplicates] = useState<any[] | null>(null);
   const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(new Set());
@@ -125,26 +130,31 @@ export default function App() {
   const [minSize, setMinSize] = useState<string>('');
   const [maxSize, setMaxSize] = useState<string>('');
 
+  // Show Alert Dialog
   const showAlert = (title: string, message: string) => {
     setDialog({ isOpen: true, type: 'alert', title, message, onConfirm: () => setDialog(d => ({ ...d, isOpen: false })) });
   };
 
+  // Show Confirmation Dialog
   const showConfirm = (title: string, message: string, confirmText: string, onConfirm: () => void) => {
     setDialog({ isOpen: true, type: 'confirm', title, message, confirmText, cancelText: 'Batal', onConfirm });
   };
 
   const closeDialog = () => setDialog(d => ({ ...d, isOpen: false }));
 
+  // Check Undo History Availability
   const checkUndo = async () => {
     const has = await HasUndoHistory();
     setCanUndo(has);
   };
 
+  // Load Lifetime Application Stats
   const loadStats = async () => {
     const s = await GetLifetimeStats();
     setLifetimeStats(s);
   };
 
+  // Load Application Config
   const loadAppConfig = async () => {
     const c = await GetConfig();
     if (c) {
@@ -155,6 +165,7 @@ export default function App() {
     }
   };
 
+  // Initialize Event Listeners & Load Initial Data
   useEffect(() => {
     EventsOn("sort-progress", (data) => {
       setProgress(data);
@@ -162,10 +173,8 @@ export default function App() {
         setLoading(false);
         checkUndo();
         loadStats();
-        const now = new Date();
-        setLastActionTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         if (data.errorMsg) {
-          showAlert("Peringatan", data.errorMsg);
+          showAlert("Informasi", data.errorMsg);
         }
       }
     });
@@ -174,7 +183,7 @@ export default function App() {
     loadAppConfig();
   }, []);
 
-  // System Warning Countdown Logic (When Sorting Protected Path)
+  // System Warning Countdown Timer (when sorting protected system path)
   useEffect(() => {
     if (sysWarning.isOpen && sysWarning.countdown > 0) {
       timerRef.current = setTimeout(() => {
@@ -184,7 +193,7 @@ export default function App() {
     return () => clearTimeout(timerRef.current);
   }, [sysWarning]);
 
-  // Disable Warning Modal Countdown Logic (10s Countdown Before Disabling Safety Warning Toggle)
+  // 10-Second Countdown Timer Before Disabling Safety Warning Toggle
   useEffect(() => {
     if (disableWarningModal.isOpen && disableWarningModal.countdown > 0) {
       disableTimerRef.current = setTimeout(() => {
@@ -194,11 +203,13 @@ export default function App() {
     return () => clearTimeout(disableTimerRef.current);
   }, [disableWarningModal]);
 
+  // Open Settings Modal
   const openSettings = async () => {
     await loadAppConfig();
     setIsSettingsOpen(true);
   };
 
+  // Save Settings
   const saveSettings = async () => {
     if (appConfig) {
       await SaveConfig(appConfig);
@@ -213,8 +224,9 @@ export default function App() {
     }
   };
 
+  // Reset Settings to Defaults
   const resetSettings = () => {
-    showConfirm("Reset Pengaturan", "Apakah Anda yakin ingin mengembalikan semua aturan ke pengaturan pabrik?", "Reset ke Default", async () => {
+    showConfirm("Reset Pengaturan", "Apakah Anda yakin ingin mengembalikan semua aturan ke pengaturan awal?", "Reset Ke Default", async () => {
       closeDialog();
       const c = await ResetConfig();
       setAppConfig(c);
@@ -228,15 +240,17 @@ export default function App() {
     });
   };
 
+  // Export Config
   const handleExport = async () => {
     try {
       await ExportConfig();
-      showAlert("Berhasil", "Pengaturan berhasil diekspor!");
+      showAlert("Berhasil", "Pengaturan berhasil diekspor.");
     } catch (e) {
       console.error(e);
     }
   };
 
+  // Import Config
   const handleImport = async () => {
     try {
       const c = await ImportConfig();
@@ -251,6 +265,7 @@ export default function App() {
     }
   };
 
+  // Select Rule Target Folder
   const handleSelectTarget = async () => {
     const selected = await SelectTargetFolder();
     if (selected) {
@@ -258,6 +273,7 @@ export default function App() {
     }
   };
 
+  // Add New Rule
   const addRule = () => {
     if (!newCat || !newTarget || appConfig === null) return;
     if (!newExt && !newKeywords) return;
@@ -280,6 +296,7 @@ export default function App() {
     setNewCat(''); setNewExt(''); setNewKeywords(''); setNewTarget(''); setMinSize(''); setMaxSize('');
   };
 
+  // Delete Rule
   const deleteRule = (index: number) => {
     if (!appConfig) return;
     const newRules = [...appConfig.rules];
@@ -315,6 +332,7 @@ export default function App() {
     }
   };
 
+  // Execute Folder Scan
   const executeFolderScan = async (path: string) => {
     setFolder(path);
     setLoading(true);
@@ -324,13 +342,13 @@ export default function App() {
       const res = await ScanFolder(path);
       setScanResult(res);
       setRecentFolders(prev => [path, ...prev.filter(p => p !== path)].slice(0, 5));
-      setLastActionTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     } catch (e) {
-      showAlert("Error", "Target folder tidak ditemukan atau akses ditolak.");
+      showAlert("Error", "Folder tidak ditemukan atau akses ditolak.");
     }
     setLoading(false);
   };
 
+  // Handle Main Select Folder Button
   const handleSelectFolder = async () => {
     const selected = await SelectFolder();
     if (selected) {
@@ -338,12 +356,13 @@ export default function App() {
     }
   };
 
-  // 1-Click Sort Favorite Folder (Bypasses 10s Delay!)
+  // Quick Scan & Sort for Favorite Folder
   const handleQuickSortFavorite = async (favPath: string) => {
     await executeFolderScan(favPath);
     executeSortForFolder(favPath);
   };
 
+  // Pre-sort Safety Checks
   const handlePreSortCheck = async () => {
     if (!folder) return;
     const isSys = await IsSystemPath(folder);
@@ -354,6 +373,7 @@ export default function App() {
     }
   };
 
+  // Execute Sort Process
   const executeSortForFolder = (targetFolder: string) => {
     setSysWarning({ isOpen: false, countdown: 10 });
     setLoading(true);
@@ -361,22 +381,25 @@ export default function App() {
     SortFolder(targetFolder);
   };
 
+  // Cancel Ongoing Sort
   const handleCancelSort = () => {
     CancelSort();
   };
 
+  // Toggle System Path Warning Safety Switch
   const handleToggleWarnSystemPath = (currentlyOn: boolean) => {
     if (currentlyOn) {
-      // User is attempting to turn OFF safety warning -> Trigger 10s countdown confirmation modal!
+      // Disabling safety warning requires 10-second confirmation delay
       setDisableWarningModal({ isOpen: true, countdown: 10 });
     } else {
-      // User is turning safety warning back ON -> Apply immediately
+      // Re-enabling takes effect immediately
       if (appConfig) {
         setAppConfig({ ...appConfig, warn_system_path: true });
       }
     }
   };
 
+  // Confirm Disabling System Safety Warning After Countdown
   const confirmDisableWarning = () => {
     if (appConfig) {
       setAppConfig({ ...appConfig, warn_system_path: false });
@@ -384,6 +407,7 @@ export default function App() {
     setDisableWarningModal({ isOpen: false, countdown: 10 });
   };
 
+  // Select Folder for Cleaner
   const handleSelectCleanerFolder = async () => {
     const selected = await SelectFolder();
     if (selected) {
@@ -392,6 +416,7 @@ export default function App() {
     }
   };
 
+  // Scan Duplicates
   const handleScanDuplicates = async () => {
     if (!cleanerFolder) return;
     setLoading(true);
@@ -410,13 +435,12 @@ export default function App() {
     if (!duplicates) return;
     const group = duplicates[groupIndex];
     const newSelected = new Set(selectedForDeletion);
-
-    const allChecked = group.files.every(f => newSelected.has(f.path));
+    const allChecked = group.files.every((f: any) => newSelected.has(f.path));
 
     if (allChecked) {
-      group.files.forEach(f => newSelected.delete(f.path));
+      group.files.forEach((f: any) => newSelected.delete(f.path));
     } else {
-      group.files.slice(1).forEach(f => newSelected.add(f.path));
+      group.files.slice(1).forEach((f: any) => newSelected.add(f.path));
     }
     setSelectedForDeletion(newSelected);
   };
@@ -431,11 +455,12 @@ export default function App() {
     setSelectedForDeletion(newSelected);
   };
 
+  // Delete Selected Duplicates
   const handleDeleteSelected = () => {
     const paths = Array.from(selectedForDeletion);
     if (paths.length === 0) return;
 
-    showConfirm("Konfirmasi Hapus", `Apakah Anda yakin ingin menghapus ${paths.length} file duplikat secara permanen?`, "Hapus Permanen", async () => {
+    showConfirm("Konfirmasi Hapus", `Apakah Anda yakin ingin menghapus ${paths.length} file duplikat terpilih?`, "Hapus Permanen", async () => {
       closeDialog();
       setLoading(true);
       try {
@@ -449,13 +474,14 @@ export default function App() {
     });
   };
 
+  // Undo Last Sort
   const handleUndo = async () => {
-    showConfirm("Undo Penyortiran", "Apakah Anda yakin ingin mengembalikan file yang baru saja dipindahkan ke lokasi asalnya?", "Undo Sekarang", async () => {
+    showConfirm("Undo Penyortiran", "Apakah Anda yakin ingin mengembalikan file yang baru disortir ke lokasi asal?", "Undo Sekarang", async () => {
       closeDialog();
       setLoading(true);
       try {
         const count = await UndoLastSort();
-        showAlert("Undo Berhasil", `Berhasil mengembalikan ${count} file ke folder asal.`);
+        showAlert("Berhasil", `${count} file telah dikembalikan ke folder awal.`);
         checkUndo();
         loadStats();
         if (folder) {
@@ -469,11 +495,11 @@ export default function App() {
     });
   };
 
-  // Visual Chart Data
+  // Doughnut Chart Data
   const getChartData = () => {
     if (!scanResult || !scanResult.stats || scanResult.stats.length === 0) {
       return {
-        labels: ['Tidak Ada Item'],
+        labels: ['Kosong'],
         datasets: [{
           data: [1],
           backgroundColor: ['#334155'],
@@ -498,7 +524,7 @@ export default function App() {
     };
   };
 
-  // Lifetime History Line Chart
+  // Historical Chart Data
   const getHistoryChartData = () => {
     if (!lifetimeStats || !lifetimeStats.history) return null;
     const dates = Object.keys(lifetimeStats.history).sort();
@@ -530,21 +556,19 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen bg-[#0f172a] text-slate-100 font-sans select-none overflow-hidden border border-slate-800">
       
-      {/* Jakob's Heuristic #4 & #8: Minimalist Solid Top Header */}
+      {/* Top Header */}
       <header className="flex items-center justify-between px-6 py-3 bg-[#1e293b] border-b border-slate-800 shadow-md">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center font-bold text-white shadow-lg">
             JS
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-wide text-white flex items-center gap-2">
-              JazaSort <span className="text-[10px] bg-blue-900/60 text-blue-300 border border-blue-700/50 px-1.5 py-0.5 rounded font-mono">RUST v2</span>
-            </h1>
-            <p className="text-[11px] text-slate-400">Pengorganisir File Otomatis & Keamanan Cerdas</p>
+            <h1 className="text-base font-bold tracking-wide text-white">JazaSort</h1>
+            <p className="text-[11px] text-slate-400">Pengatur File Otomatis</p>
           </div>
         </div>
 
-        {/* Navigation Tabs - Jakob's Heuristic #6: Recognition Rather Than Recall */}
+        {/* Primary Tab Navigation */}
         <nav className="flex items-center bg-[#0f172a] p-1 rounded-xl border border-slate-800">
           <button
             onClick={() => setActiveTab('sorter')}
@@ -552,7 +576,7 @@ export default function App() {
               activeTab === 'sorter' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>📁</span> Sorter File
+            Sorter
           </button>
 
           <button
@@ -561,7 +585,7 @@ export default function App() {
               activeTab === 'cleaner' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>🧹</span> Pembersih Duplikat
+            Pembersih Duplikat
           </button>
 
           <button
@@ -570,87 +594,81 @@ export default function App() {
               activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <span>📊</span> Dashboard Status
+            Dashboard
           </button>
         </nav>
 
-        {/* Global Action Bar */}
+        {/* Right Action Buttons */}
         <div className="flex items-center gap-2">
           {canUndo && (
             <button
               onClick={handleUndo}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors shadow-sm"
-              title="Undo Penyortiran Terakhir (Jakob: Freedom & Control)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors"
             >
-              <span>↩️</span> Undo Last Sort
+              Undo
             </button>
           )}
 
           <button
             onClick={() => setIsHelpOpen(true)}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#27354f] transition-colors"
-            title="Panduan & Tips Keamanan"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#27354f] transition-colors text-xs font-bold"
           >
-            ❓
+            Bantuan
           </button>
 
           <button
             onClick={openSettings}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#27354f] transition-colors"
-            title="Pengaturan Aturan & Keamanan"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#27354f] transition-colors text-xs font-bold"
           >
-            ⚙️
+            Pengaturan
           </button>
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content View */}
       <main className="flex-1 overflow-hidden p-6 relative">
         
         {/* TAB 1: FILE SORTER */}
         {activeTab === 'sorter' && (
           <div className="h-full flex flex-col gap-5">
             
-            {/* Jakob's Heuristic #7: Flexibility & Efficiency - Favorite Folders Bar */}
+            {/* Favorite Folders Bar */}
             <div className="bg-[#1e293b] p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-                  <span>⭐</span> FOLDER FAVORIT (TANPA DELAY 10S)
+                  Folder Favorit
                 </div>
                 <button
                   onClick={handleAddFavorite}
-                  className="text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 px-2.5 py-1 rounded-md transition-colors flex items-center gap-1"
+                  className="text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 border border-slate-700 px-2.5 py-1 rounded-md transition-colors"
                 >
-                  <span>➕</span> Tambah Favorit
+                  + Tambah Favorit
                 </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 {favoriteFolders.length === 0 ? (
-                  <span className="text-xs text-slate-500 italic">Belum ada folder favorit ditambahkan.</span>
+                  <span className="text-xs text-slate-500 italic">Belum ada folder favorit.</span>
                 ) : (
                   favoriteFolders.map((favPath, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-2 bg-[#0f172a] border border-slate-700/80 px-3 py-1.5 rounded-lg shadow-sm group hover:border-blue-500/50 transition-colors"
+                      className="flex items-center gap-2 bg-[#0f172a] border border-slate-700 px-3 py-1.5 rounded-lg shadow-sm"
                     >
-                      <span className="text-xs text-slate-200 font-medium truncate max-w-[200px]" title={favPath}>
+                      <span className="text-xs text-slate-200 font-medium truncate max-w-[220px]" title={favPath}>
                         📁 {favPath.split(/[/\\]/).pop() || favPath}
                       </span>
 
-                      {/* 1-Click Instant Sort Button */}
                       <button
                         onClick={() => handleQuickSortFavorite(favPath)}
-                        className="text-[10px] bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 border border-emerald-500/50 px-2 py-0.5 rounded transition-all font-semibold"
-                        title="Sort Langsung (Bypass Peringatan 10s)"
+                        className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-2 py-0.5 rounded transition-colors"
                       >
-                        🚀 Sort Saja
+                        Sortir
                       </button>
 
                       <button
                         onClick={() => handleRemoveFavorite(favPath)}
                         className="text-slate-500 hover:text-red-400 text-xs px-1"
-                        title="Hapus dari Favorit"
                       >
                         ×
                       </button>
@@ -660,22 +678,22 @@ export default function App() {
               </div>
             </div>
 
-            {/* Main Selector & Action Control */}
+            {/* Sorter Main View */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 flex-1 overflow-hidden">
               
-              {/* Left Column: Target Folder & Stats */}
+              {/* Left Column: Folder Selector & Actions */}
               <div className="md:col-span-1 flex flex-col gap-4 bg-[#1e293b] p-5 rounded-xl border border-slate-800 shadow-sm overflow-y-auto custom-scrollbar">
                 <div>
                   <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                    Target Folder
+                    Folder Asal
                   </label>
 
                   <div className="flex gap-2">
                     <button
                       onClick={handleSelectFolder}
-                      className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded-lg shadow transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs px-4 py-2.5 rounded-lg shadow transition-colors"
                     >
-                      <span>📂</span> Pilih Folder
+                      Pilih Folder
                     </button>
                   </div>
 
@@ -687,53 +705,45 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Recent Folders Quick Selection */}
+                {/* Recent Folders */}
                 {recentFolders.length > 0 && (
                   <div>
                     <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">
-                      Riwayat Folder Terakhir
+                      Folder Terakhir
                     </label>
                     <div className="flex flex-col gap-1.5">
                       {recentFolders.map((rf, i) => (
                         <button
                           key={i}
                           onClick={() => executeFolderScan(rf)}
-                          className="text-left text-xs text-slate-300 hover:text-white bg-[#0f172a] hover:bg-[#27354f] p-2 rounded border border-slate-800/80 truncate transition-colors"
+                          className="text-left text-xs text-slate-300 hover:text-white bg-[#0f172a] hover:bg-[#27354f] p-2 rounded border border-slate-800 truncate transition-colors"
                           title={rf}
                         >
-                          🕒 {rf.split(/[/\\]/).pop()} <span className="text-[10px] text-slate-500">({rf})</span>
+                          {rf.split(/[/\\]/).pop()} <span className="text-[10px] text-slate-500">({rf})</span>
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Item Summary Card */}
+                {/* Scan Summary */}
                 {scanResult && (
                   <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 flex flex-col gap-3 mt-auto">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-400">Total File Siap Disortir:</span>
+                      <span className="text-xs text-slate-400">Total File Ditemukan:</span>
                       <span className="text-sm font-bold text-emerald-400">{scanResult.totalSortable}</span>
                     </div>
 
                     <button
                       onClick={handlePreSortCheck}
                       disabled={loading || scanResult.totalSortable === 0}
-                      className={`w-full py-3 rounded-xl font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 ${
+                      className={`w-full py-3 rounded-xl font-bold text-xs shadow-lg transition-all ${
                         loading || scanResult.totalSortable === 0
                           ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                          : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-emerald-900/40'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                       }`}
                     >
-                      {loading ? (
-                        <>
-                          <span className="animate-spin">⏳</span> Menyortir...
-                        </>
-                      ) : (
-                        <>
-                          <span>⚡</span> Jalankan Sortir File Sekarang
-                        </>
-                      )}
+                      {loading ? 'Menyortir...' : 'Mulai Sortir File'}
                     </button>
 
                     {loading && (
@@ -741,23 +751,18 @@ export default function App() {
                         onClick={handleCancelSort}
                         className="w-full py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-800/50 rounded-lg text-xs font-semibold transition-colors"
                       >
-                        ⛔ Batalkan Sortir
+                        Batalkan
                       </button>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Right Column: Visual Category Breakdown Chart */}
+              {/* Right Column: Doughnut Chart */}
               <div className="md:col-span-2 bg-[#1e293b] p-5 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <span>📊</span> Komposisi Ekstensi File
-                  </h3>
-                  {lastActionTime && (
-                    <span className="text-[11px] text-slate-500">Pembaruan Terakhir: {lastActionTime}</span>
-                  )}
-                </div>
+                <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                  Komposisi File
+                </h3>
 
                 <div className="flex-1 flex items-center justify-center relative max-h-[340px]">
                   <Doughnut
@@ -774,14 +779,14 @@ export default function App() {
                   />
                 </div>
 
-                {/* Progress Indicator */}
+                {/* Progress Notification */}
                 {progress && (
                   <div className="mt-4 p-3 bg-[#0f172a] rounded-lg border border-slate-800 flex items-center justify-between text-xs">
                     <span className="text-slate-300">
                       Proses: <strong className="text-emerald-400">{progress.totalMoved}</strong> dipindahkan,{' '}
                       <strong className="text-red-400">{progress.totalErrors}</strong> error
                     </span>
-                    <span className="text-slate-500">{progress.isDone ? '✅ Selesai' : '⏳ Berjalan...'}</span>
+                    <span className="text-slate-500">{progress.isDone ? 'Selesai' : 'Sedang berjalan...'}</span>
                   </div>
                 )}
               </div>
@@ -794,11 +799,9 @@ export default function App() {
           <div className="h-full flex flex-col gap-4 bg-[#1e293b] p-5 rounded-xl border border-slate-800 shadow-sm overflow-hidden">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div>
-                <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                  <span>🧹</span> Pembersih File Duplikat Multi-Tahap (SHA-256)
-                </h2>
+                <h2 className="text-sm font-bold text-white">Pembersih File Duplikat</h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Memindai file identik (byte-for-byte) secara aman dengan 3-stage hashing untuk menghemat ruang penyimpanan.
+                  Memindai file identik untuk menghemat ruang penyimpanan.
                 </p>
               </div>
 
@@ -824,11 +827,11 @@ export default function App() {
             <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3 pr-1">
               {!duplicates ? (
                 <div className="flex flex-col items-center justify-center h-full text-slate-500 text-xs">
-                  <span>🔍 Pilih folder lalu klik "Pindai Duplikat" untuk mencari file ganda.</span>
+                  Pilih folder lalu klik "Pindai Duplikat".
                 </div>
               ) : duplicates.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-emerald-400 text-xs font-medium">
-                  <span>🎉 Selamat! Tidak ditemukan file duplikat di folder ini.</span>
+                  Tidak ditemukan file duplikat.
                 </div>
               ) : (
                 duplicates.map((group, gIdx) => (
@@ -868,44 +871,41 @@ export default function App() {
                   onClick={handleDeleteSelected}
                   className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition-colors"
                 >
-                  Hapus Terpilih Permanen
+                  Hapus File Terpilih
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 3: DASHBOARD & LIFETIME STATS */}
+        {/* TAB 3: DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div className="h-full flex flex-col gap-5 overflow-y-auto custom-scrollbar pr-1">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="bg-[#1e293b] p-5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
                 <span className="text-xs font-semibold text-slate-400">Total File Dipindahkan</span>
                 <span className="text-2xl font-bold text-blue-400 mt-2">{lifetimeStats?.total_files || 0}</span>
-                <span className="text-[11px] text-slate-500 mt-1">Sejak awal penggunaan</span>
               </div>
 
               <div className="bg-[#1e293b] p-5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
-                <span className="text-xs font-semibold text-slate-400">Total Ruang Dibereskan</span>
+                <span className="text-xs font-semibold text-slate-400">Total Ukuran Dibereskan</span>
                 <span className="text-2xl font-bold text-emerald-400 mt-2">
                   {((lifetimeStats?.total_mb || 0) / 1024).toFixed(2)} GB
                 </span>
-                <span className="text-[11px] text-slate-500 mt-1">Total {Math.round(lifetimeStats?.total_mb || 0)} MB</span>
               </div>
 
               <div className="bg-[#1e293b] p-5 rounded-xl border border-slate-800 shadow-sm flex flex-col">
-                <span className="text-xs font-semibold text-slate-400">Status Keamanan System</span>
+                <span className="text-xs font-semibold text-slate-400">Status Peringatan Sistem</span>
                 <span className={`text-sm font-bold mt-2 ${appConfig?.warn_system_path ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {appConfig?.warn_system_path ? '🛡️ Aktif (Peringatan 10s)' : '⚠️ Menonaktifkan Peringatan'}
+                  {appConfig?.warn_system_path ? 'Aktif' : 'Nonaktif'}
                 </span>
-                <span className="text-[11px] text-slate-500 mt-1">{favoriteFolders.length} Folder Favorit Dibebaskan</span>
               </div>
             </div>
 
-            {/* History Line Chart */}
+            {/* Historical Activity Line Chart */}
             <div className="bg-[#1e293b] p-5 rounded-xl border border-slate-800 shadow-sm flex-1 min-h-[300px] flex flex-col">
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-4">
-                📈 Riwayat Aktivitas 7 Hari Terakhir
+                Riwayat Aktivitas 7 Hari Terakhir
               </h3>
               <div className="flex-1 relative">
                 {getHistoryChartData() ? (
@@ -922,7 +922,7 @@ export default function App() {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-xs text-slate-500">
-                    Belum ada data aktivitas historis.
+                    Belum ada data riwayat.
                   </div>
                 )}
               </div>
@@ -932,31 +932,27 @@ export default function App() {
 
       </main>
 
-      {/* MODAL: 10s COUNTDOWN SYSTEM PATH WARNING */}
+      {/* SYSTEM PATH WARNING MODAL (10-SECOND DELAY) */}
       {sysWarning.isOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#1e293b] border border-amber-500/50 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
-            <div className="flex items-center gap-3 text-amber-400">
-              <span className="text-2xl">⚠️</span>
-              <h3 className="font-bold text-base text-white">Peringatan Keamanan Folder System</h3>
-            </div>
+            <h3 className="font-bold text-base text-white">Peringatan Lokasi Sistem</h3>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Folder yang Anda pilih (<strong className="text-amber-300">{folder}</strong>) berada di dalam lokasi proteksi sistem (C:\ Drive / Windows).
-              Penyortiran dapat memindahkan file sistem secara tidak sengaja.
+              Folder terpilih ({folder}) berada di direktori sistem. Harap tunggu sebentar sebelum mengonfirmasi penyortiran.
             </p>
 
-            <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 text-center flex flex-col items-center gap-2">
-              <span className="text-xs text-slate-400">Waktu Tunggu Keamanan:</span>
-              <span className="text-3xl font-bold font-mono text-amber-400">{sysWarning.countdown} Detik</span>
+            <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 text-center flex flex-col items-center gap-1">
+              <span className="text-xs text-slate-400">Waktu Tunggu Konfirmasi:</span>
+              <span className="text-2xl font-bold font-mono text-amber-400">{sysWarning.countdown} Detik</span>
             </div>
 
             <div className="flex gap-3 mt-2">
               <button
                 onClick={() => setSysWarning({ isOpen: false, countdown: 10 })}
-                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors"
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
               >
-                Batal (Sangat Aman)
+                Batal
               </button>
 
               <button
@@ -965,7 +961,7 @@ export default function App() {
                 className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
                   sysWarning.countdown > 0
                     ? 'bg-slate-800 text-slate-600 border border-slate-700 cursor-not-allowed'
-                    : 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-900/40'
+                    : 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg'
                 }`}
               >
                 {sysWarning.countdown > 0 ? `Tunggu (${sysWarning.countdown}s)...` : 'Lanjutkan Sortir'}
@@ -975,32 +971,27 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: 10s COUNTDOWN BEFORE DISABLING SYSTEM WARNING TOGGLE (Jakob Heuristic #5: Error Prevention) */}
+      {/* 10-SECOND COUNTDOWN MODAL BEFORE DISABLING SYSTEM WARNING */}
       {disableWarningModal.isOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#1e293b] border border-red-500/50 rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col gap-4">
-            <div className="flex items-center gap-3 text-red-400">
-              <span className="text-2xl">🛑</span>
-              <h3 className="font-bold text-base text-white">Konfirmasi Mematikan Peringatan Keamanan</h3>
-            </div>
+            <h3 className="font-bold text-base text-white">Konfirmasi Menonaktifkan Peringatan</h3>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Anda mencoba <strong className="text-red-400">mematikan Peringatan Keamanan System Path 10 Detik</strong>.
-              Mematikan fitur ini berisiko menyebabkan folder sistem disortir secara tidak sengaja tanpa penundaan.
-              Harap baca dan tunggu selama 10 detik sebelum mengonfirmasi.
+              Anda akan menonaktifkan peringatan lokasi sistem. Harap baca dan tunggu 10 detik sebelum mengonfirmasi.
             </p>
 
-            <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 text-center flex flex-col items-center gap-2">
-              <span className="text-xs text-slate-400">Hitung Mundur Konfirmasi:</span>
-              <span className="text-3xl font-bold font-mono text-red-400">{disableWarningModal.countdown} Detik</span>
+            <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 text-center flex flex-col items-center gap-1">
+              <span className="text-xs text-slate-400">Waktu Tunggu:</span>
+              <span className="text-2xl font-bold font-mono text-red-400">{disableWarningModal.countdown} Detik</span>
             </div>
 
             <div className="flex gap-3 mt-2">
               <button
                 onClick={() => setDisableWarningModal({ isOpen: false, countdown: 10 })}
-                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors"
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl"
               >
-                Batal (Tetap Amankan)
+                Batal
               </button>
 
               <button
@@ -1009,38 +1000,36 @@ export default function App() {
                 className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
                   disableWarningModal.countdown > 0
                     ? 'bg-slate-800 text-slate-600 border border-slate-700 cursor-not-allowed'
-                    : 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/40'
+                    : 'bg-red-600 hover:bg-red-500 text-white shadow-lg'
                 }`}
               >
-                {disableWarningModal.countdown > 0 ? `Tunggu (${disableWarningModal.countdown}s)...` : 'Ya, Matikan Peringatan'}
+                {disableWarningModal.countdown > 0 ? `Tunggu (${disableWarningModal.countdown}s)...` : 'Ya, Menonaktifkan'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL: SETTINGS & CONFIG MANAGER */}
+      {/* SETTINGS MODAL */}
       {isSettingsOpen && appConfig && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#1e293b] border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden gap-4">
             
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                <span>⚙️</span> Pengaturan Aturan & Keamanan
-              </h3>
+              <h3 className="font-bold text-sm text-white">Pengaturan Aturan & Keamanan</h3>
               <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 hover:text-white text-lg">×</button>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-5 pr-1">
               
-              {/* Safety Toggles Section */}
+              {/* Safety Options */}
               <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
-                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">🛡️ Opsi Keamanan System</h4>
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Keamanan</h4>
                 
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs font-medium text-slate-200">Peringatan Keamanan System Path (10 Detik)</div>
-                    <div className="text-[11px] text-slate-500">Mencegah penyortiran tidak sengaja di folder C:\ / Windows. (Mematikan butuh konfirmasi 10s)</div>
+                    <div className="text-xs font-medium text-slate-200">Peringatan Lokasi Sistem (10 Detik)</div>
+                    <div className="text-[11px] text-slate-500">Memberikan penundaan konfirmasi saat menyortir direktori sistem.</div>
                   </div>
                   <button
                     onClick={() => handleToggleWarnSystemPath(appConfig.warn_system_path)}
@@ -1055,10 +1044,10 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Manage Favorite Folders Section */}
+              {/* Favorite Folders */}
               <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">⭐ Kelola Folder Favorit</h4>
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Folder Favorit</h4>
                   <button onClick={handleAddFavorite} className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1 rounded">
                     + Tambah
                   </button>
@@ -1074,9 +1063,9 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Add New Rule Form */}
+              {/* Add New Rule */}
               <div className="bg-[#0f172a] p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
-                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">➕ Tambah Aturan Penyortiran Baru</h4>
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Tambah Aturan Baru</h4>
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <input
                     type="text"
@@ -1097,7 +1086,7 @@ export default function App() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Folder Tujuan"
+                    placeholder="Folder Target"
                     value={newTarget}
                     onChange={e => setNewTarget(e.target.value)}
                     className="flex-1 bg-[#1e293b] border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
@@ -1143,28 +1132,29 @@ export default function App() {
         </div>
       )}
 
-      {/* HELP & DIALOG MODALS */}
+      {/* HELP MODAL */}
       {isHelpOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#1e293b] border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h3 className="font-bold text-sm text-white">❓ Panduan Penggunaan & Keamanan</h3>
+              <h3 className="font-bold text-sm text-white">Panduan Penggunaan</h3>
               <button onClick={() => setIsHelpOpen(false)} className="text-slate-400 hover:text-white">×</button>
             </div>
 
             <div className="text-xs text-slate-300 flex flex-col gap-3 leading-relaxed">
-              <p><strong>1. Folder Favorit & Bypass 10s:</strong> Folder yang berada dalam daftar Favorit (Default: Downloads) secara otomatis dibebaskan dari waktu tunggu peringatan 10 detik.</p>
-              <p><strong>2. Peringatan Keamanan System Path:</strong> Menyortir folder di drive sistem C:\ memerlukan konfirmasi waktu tunggu 10 detik untuk mencegah kesalahan pemindahan file OS.</p>
-              <p><strong>3. Mematikan Fitur Keamanan:</strong> Jika Anda mematikan tombol peringatan di Pengaturan, aplikasi memerlukan waktu tunggu 10 detik sebagai konfirmasi pengamanan ekstra sebelum fitur dinonaktifkan.</p>
+              <p><strong>1. Folder Favorit:</strong> Folder yang ditambahkan ke daftar favorit dibebaskan dari penundaan waktu tunggu 10 detik saat menyortir.</p>
+              <p><strong>2. Peringatan Lokasi Sistem:</strong> Lokasi direktori sistem C:\ memerlukan konfirmasi waktu tunggu 10 detik untuk mencegah kesalahan penyortiran folder OS.</p>
+              <p><strong>3. Mengatur Peringatan:</strong> Sakelar peringatan dapat diatur pada menu Pengaturan dengan prosedur konfirmasi 10 detik.</p>
             </div>
 
-            <button onClick={() => setIsHelpOpen(false)} className="bg-blue-600 text-white font-bold text-xs py-2 rounded-lg">Paham</button>
+            <button onClick={() => setIsHelpOpen(false)} className="bg-blue-600 text-white font-bold text-xs py-2 rounded-lg">Tutup</button>
           </div>
         </div>
       )}
 
+      {/* CUSTOM DIALOG MODAL */}
       {dialog.isOpen && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#1e293b] border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
             <h3 className="font-bold text-sm text-white">{dialog.title}</h3>
             <p className="text-xs text-slate-300 leading-relaxed">{dialog.message}</p>
