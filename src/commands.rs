@@ -130,8 +130,11 @@ pub fn has_undo_history() -> bool {
 
 #[tauri::command]
 pub fn is_system_path(path: String) -> bool {
-    sorter::is_system_path(&path)
+    let cfg = get_config();
+    sorter::is_system_path(&path, &cfg.favorite_folders, cfg.warn_system_path)
 }
+
+
 
 #[tauri::command]
 pub fn get_lifetime_stats() -> LifetimeStats {

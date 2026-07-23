@@ -18,8 +18,20 @@ pub const SYSTEM_PATHS: &[&str] = &[
     "C:\\System32",
 ];
 
-pub fn is_system_path(path: &str) -> bool {
+pub fn is_system_path(path: &str, favorite_folders: &[String], warn_system_path: bool) -> bool {
+    if !warn_system_path {
+        return false;
+    }
+
     let cleaned = path.trim_end_matches(['\\', '/']).to_lowercase();
+
+    for fav in favorite_folders {
+        let fav_cleaned = fav.trim_end_matches(['\\', '/']).to_lowercase();
+        if cleaned == fav_cleaned || cleaned.starts_with(&format!("{}\\", fav_cleaned)) || cleaned.starts_with(&format!("{}/", fav_cleaned)) {
+            return false;
+        }
+    }
+
     for sys in SYSTEM_PATHS {
         let sys_cleaned = sys.trim_end_matches(['\\', '/']).to_lowercase();
         if sys_cleaned == "c:" {
@@ -32,6 +44,8 @@ pub fn is_system_path(path: &str) -> bool {
     }
     false
 }
+
+
 
 
 lazy_static::lazy_static! {
@@ -435,9 +449,10 @@ mod tests {
 
     #[test]
     fn test_is_system_path() {
-        assert!(is_system_path("C:\\Windows\\System32"));
-        assert!(!is_system_path("C:\\Users\\StandardUser\\Downloads"));
+        assert!(is_system_path("C:\\Windows\\System32", &[], true));
+        assert!(!is_system_path("C:\\Users\\StandardUser\\Downloads", &[], true));
     }
+
 
     #[test]
     fn test_clean_dir_name() {

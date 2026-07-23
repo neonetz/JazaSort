@@ -14,13 +14,37 @@ pub struct Rule {
     pub max_size_mb: Option<f64>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+fn default_true() -> bool {
+    true
+}
+
+fn default_favorites() -> Vec<String> {
+    vec!["{HOME}/Downloads".to_string()]
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Config {
     pub source_folders: Vec<String>,
     pub scan_subfolders: bool,
-    pub enable_mica: bool,
+    #[serde(default = "default_true")]
+    pub warn_system_path: bool,
+    #[serde(default = "default_favorites")]
+    pub favorite_folders: Vec<String>,
     pub hide_unsupported: bool,
     pub rules: Vec<Rule>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            source_folders: vec!["{HOME}/Downloads".to_string(), "{HOME}/Desktop".to_string()],
+            scan_subfolders: false,
+            warn_system_path: true,
+            favorite_folders: vec!["{HOME}/Downloads".to_string()],
+            hide_unsupported: true,
+            rules: Vec::new(),
+        }
+    }
 }
 
 const EMBEDDED_CONFIG: &[u8] = include_bytes!("config.json");
@@ -43,6 +67,10 @@ pub fn load_embedded() -> Result<Config, String> {
         .unwrap_or_else(|| "C:/".to_string());
 
     for folder in &mut cfg.source_folders {
+        *folder = folder.replace("{HOME}", &home_dir);
+    }
+
+    for folder in &mut cfg.favorite_folders {
         *folder = folder.replace("{HOME}", &home_dir);
     }
 
@@ -71,7 +99,15 @@ pub fn load() -> Result<Config, String> {
     };
 
     match serde_json::from_slice::<Config>(&file_bytes) {
-        Ok(cfg) => Ok(cfg),
+        Ok(mut cfg) => {
+            let home_dir = dirs::home_dir()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|| "C:/".to_string());
+            for folder in &mut cfg.favorite_folders {
+                *folder = folder.replace("{HOME}", &home_dir);
+            }
+            Ok(cfg)
+        }
         Err(_) => load_embedded(),
     }
 }
@@ -98,6 +134,8 @@ mod tests {
         let cfg = load_embedded().expect("Should parse embedded config");
         assert!(!cfg.rules.is_empty());
         assert_eq!(cfg.rules[0].category, "Documents");
+        assert!(!cfg.favorite_folders.is_empty());
+        assert!(cfg.warn_system_path);
     }
 
     #[test]
@@ -105,5 +143,6 @@ mod tests {
         let cfg = load_embedded().unwrap();
         assert!(!cfg.rules[0].target_folder.contains("{HOME}"));
         assert!(!cfg.source_folders[0].contains("{HOME}"));
+        assert!(!cfg.favorite_folders[0].contains("{HOME}"));
     }
 }

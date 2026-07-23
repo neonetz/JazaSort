@@ -3,8 +3,11 @@
     "{HOME}/Downloads",
     "{HOME}/Desktop"
   ],
+  "favorite_folders": [
+    "{HOME}/Downloads"
+  ],
+  "warn_system_path": true,
   "scan_subfolders": false,
-  "enable_mica": true,
   "hide_unsupported": true,
   "rules": [
     {
