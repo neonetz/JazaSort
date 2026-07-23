@@ -2,7 +2,7 @@ name: Test & Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "ref/*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -14,11 +14,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.23'
-        
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
@@ -29,7 +27,7 @@ jobs:
       run: |
         npm ci
         npm run build
-        npm run test -- --run
+        npm run test:run
 
     - name: Backend Tests
-      run: go test -v -race ./...
+      run: cargo test --verbose

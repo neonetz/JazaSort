@@ -4,44 +4,40 @@ This file contains high-signal context for AI agents working on JazaSort. Read t
 
 ## Architecture & Frameworks
 * **App Type:** Native Windows desktop application.
-* **Backend:** Go 1.23+ with Wails v2.
+* **Backend:** Rust 2021 with Tauri v2.
 * **Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Chart.js.
 * **Entrypoints:**
-  * Go Entrypoint: `main.go` (Wails initialization, embed) and `app.go` (JS bindings).
+  * Rust Entrypoint: `src/main.rs` (Tauri initialization, window transparency) and `src/commands.rs` (IPC bindings).
   * JS Entrypoint: `frontend/src/main.tsx` and `frontend/src/App.tsx`.
 
 ## Quirks & Gotchas
-* **`go:embed` Dependency:** `main.go` requires the compiled frontend assets (`//go:embed all:frontend/dist`). **You MUST build the frontend before running Go backend tests**, or you will get a `pattern all:frontend/dist: no matching files found` error.
-* **Mica/Translucency:** Windows-specific Mica backdrop and transparency settings are initialized in `main.go`. 
-* **Environment:** GitHub Actions requires Node.js 22 (for `node:util` `styleText` support in Vitest/Rolldown) and Go 1.23. Ensure you do not downgrade these in workflows.
+* **Mica/Translucency:** Windows-specific Mica backdrop and transparency settings are configured in `src/main.rs` and `tauri.conf.json`.
+* **Environment:** GitHub Actions requires Node.js 22 and Rust 2021 (`dtolnay/rust-toolchain@stable`).
 
 ## Common Commands
 
 ### Development
-* Run full dev environment (Go rebuilds + Vite HMR):
+* Run frontend dev server:
   ```bash
-  wails dev
+  cd frontend
+  npm run dev
   ```
 
-### Testing (Strict Order Required)
-To run backend tests locally without `go:embed` failing, use this exact order:
+### Testing
 ```bash
-# 1. Build frontend first
+# 1. Run frontend tests
 cd frontend
 npm ci
-npm run build
-# 2. Run frontend tests
-npm run test -- --run
-# 3. Run backend tests
+npm run test:run
+
+# 2. Run Rust backend tests
 cd ..
-go test -v -race ./...
+cargo test
 ```
 
 ### Building for Production
-* Requires Wails CLI (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`)
-* Clean build: `wails build -clean`
-* Outputs to: `build/bin/JazaSort.exe`
+* `cargo build --release` or `cargo tauri build`
 
 ## Contribution Rules
 * **Testing is Mandatory:** Any PR or feature addition requires proof of testing (unit test output or manual testing logs).
-* **Code Style:** Run `go fmt ./...` for Go files, and `npm run lint` inside `frontend/` for TS/React files.
+* **Code Style:** Run `cargo fmt` for Rust files, and `npm run test:run` inside `frontend/` for TS/React files.
