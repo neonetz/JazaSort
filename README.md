@@ -8,7 +8,7 @@
 
 **JazaSort** is a blazingly fast, zero-configuration, native desktop file organizer for Windows. It acts as your personal digital butler, automatically sorting messy folders (Downloads, Desktop, etc.) into a clean, organized structure.
 
-Built with **Golang** (Wails) and **React** (Tailwind CSS), it runs as a native, lightweight Windows application—no browser, no heavy runtime, just pure performance.
+Built with **Rust** (Tauri v2) and **React** (Tailwind CSS), it runs as a native, blazingly fast Windows application—pure performance and memory safety.
 
 ---
 

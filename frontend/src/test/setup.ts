@@ -1,15 +1,8 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { vi, beforeAll, afterAll } from 'vitest';
 
-// Mock Wails runtime
-vi.mock('../wailsjs/runtime/runtime', () => ({
-  EventsOn: vi.fn(),
-  EventsOff: vi.fn(),
-  EventsEmit: vi.fn(),
-}));
-
-// Mock Wails bindings
-vi.mock('../wailsjs/go/main/App', () => ({
+// Mock Tauri API bridge
+vi.mock('../api', () => ({
   SelectFolder: vi.fn(),
   ScanFolder: vi.fn(),
   SortFolder: vi.fn(),
@@ -24,14 +17,9 @@ vi.mock('../wailsjs/go/main/App', () => ({
   ImportConfig: vi.fn(),
   ScanDuplicates: vi.fn(),
   DeleteFiles: vi.fn(),
-}));
-
-// Mock Wails models
-vi.mock('../wailsjs/go/models', () => ({
-  main: {},
-  config: {},
-  stats: {},
-  cleaner: {},
+  IsSystemPath: vi.fn(),
+  CancelSort: vi.fn(),
+  EventsOn: vi.fn(),
 }));
 
 // Suppress console.error in tests unless needed

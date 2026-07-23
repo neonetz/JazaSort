@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SelectFolder, ScanFolder, SortFolder, GetConfig, SaveConfig, SelectTargetFolder, ResetConfig, UndoLastSort, HasUndoHistory, GetLifetimeStats, ExportConfig, ImportConfig, ScanDuplicates, DeleteFiles, IsSystemPath, CancelSort } from '../wailsjs/go/main/App';
-import { main, config, stats, cleaner } from '../wailsjs/go/models';
-import { EventsOn } from '../wailsjs/runtime/runtime';
+import { SelectFolder, ScanFolder, SortFolder, GetConfig, SaveConfig, SelectTargetFolder, ResetConfig, UndoLastSort, HasUndoHistory, GetLifetimeStats, ExportConfig, ImportConfig, ScanDuplicates, DeleteFiles, IsSystemPath, CancelSort, EventsOn } from './api';
+
 import { Doughnut, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Plugin, CategoryScale, LinearScale, PointElement, LineElement } from 'chart.js';
 import './App.css';

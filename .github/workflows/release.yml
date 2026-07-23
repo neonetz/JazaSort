@@ -5,7 +5,6 @@ on:
     tags:
       - 'v*' # Trigger on version tags (e.g., v1.0.0-beta.1)
 
-# Permissions needed to create a GitHub Release
 permissions:
   contents: write
 
@@ -18,31 +17,26 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.23'
-        
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22'
 
-    - name: Install NSIS
+    - name: Build Frontend
+      working-directory: ./frontend
       run: |
-        choco install nsis -y
-        Add-Content -Path $env:GITHUB_PATH -Value "C:\Program Files (x86)\NSIS"
+        npm ci
+        npm run build
 
-    - name: Install Wails CLI
-      run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-
-    - name: Build Application (Portable & Installer)
-      run: wails build -nsis -clean
+    - name: Build Rust App Release
+      run: cargo build --release
 
     - name: Move and Rename Executables for Release
       run: |
-        Move-Item "build\bin\jazasort.exe" "JazaSort-Portable.exe"
-        Move-Item "build\bin\*-installer.exe" "JazaSort-Installer.exe"
+        Move-Item "target\release\jazasort.exe" "JazaSort-Portable.exe"
 
     - name: Create ZIP Archive for Portable Version
       run: Compress-Archive -Path "JazaSort-Portable.exe" -DestinationPath "JazaSort-Windows.zip"
@@ -52,7 +46,6 @@ jobs:
       with:
         files: |
           JazaSort-Portable.exe
-          JazaSort-Installer.exe
           JazaSort-Windows.zip
         draft: false
         prerelease: contains(github.ref, 'beta') || contains(github.ref, 'alpha')
