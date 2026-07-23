@@ -36,3 +36,8 @@ JazaSort_New.exe
 # Documentation & Specifications
 docs/
 
+# Rust build artifacts
+target/
+gen/
+
+

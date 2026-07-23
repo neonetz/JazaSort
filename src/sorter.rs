@@ -3,7 +3,7 @@ use id3::TagLike;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{self, File};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Mutex;
 use walkdir::WalkDir;
 
@@ -22,12 +22,17 @@ pub fn is_system_path(path: &str) -> bool {
     let cleaned = path.trim_end_matches(['\\', '/']).to_lowercase();
     for sys in SYSTEM_PATHS {
         let sys_cleaned = sys.trim_end_matches(['\\', '/']).to_lowercase();
-        if cleaned.starts_with(&sys_cleaned) {
+        if sys_cleaned == "c:" {
+            if cleaned == "c:" {
+                return true;
+            }
+        } else if cleaned == sys_cleaned || cleaned.starts_with(&format!("{}\\", sys_cleaned)) || cleaned.starts_with(&format!("{}/", sys_cleaned)) {
             return true;
         }
     }
     false
 }
+
 
 lazy_static::lazy_static! {
     static ref SORT_CANCEL_FLAG: Mutex<bool> = Mutex::new(false);
@@ -353,8 +358,8 @@ pub fn resolve_macros(target: &str, metadata: &fs::Metadata, file_path: &str) ->
         let mut camera = "Unknown_Camera".to_string();
         if let Ok(file) = File::open(file_path) {
             let mut buf_reader = std::io::BufReader::new(file);
-            if let Ok(exif) = kamadak_exif::Reader::new().read_from_container(&mut buf_reader) {
-                if let Some(field) = exif.get_field(kamadak_exif::Tag::Model, kamadak_exif::In::PRIMARY) {
+            if let Ok(exif_data) = exif::Reader::new().read_from_container(&mut buf_reader) {
+                if let Some(field) = exif_data.get_field(exif::Tag::Model, exif::In::PRIMARY) {
                     let cam_str = field.display_value().to_string();
                     let trimmed = cam_str.trim_matches('"').trim();
                     if !trimmed.is_empty() {
@@ -365,6 +370,7 @@ pub fn resolve_macros(target: &str, metadata: &fs::Metadata, file_path: &str) ->
         }
         res = res.replace("{CAMERA}", &camera);
     }
+
 
     res
 }

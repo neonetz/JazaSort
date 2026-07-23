@@ -1,9 +1,9 @@
 use crate::cleaner::{self, DuplicateGroup};
 use crate::config::{self, Config};
-use crate::sorter::{self, ScanResult, SortProgressPayload};
+use crate::sorter::{self, SortProgressPayload};
 use crate::stats::{self, LifetimeStats};
 use std::fs;
-use std::path::PathBuf;
+
 use tauri::{AppHandle, Emitter};
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::fs::{self, File};
-use std::io::{Read, Seek, SeekFrom};
+use std::io::Read;
 use std::path::Path;
 use walkdir::WalkDir;
 
@@ -138,14 +138,20 @@ mod tests {
         let file2_path = dir.path().join("test2.txt");
 
         let content = b"Duplicate content test data 123456789";
-        let mut f1 = File::create(&file1_path).unwrap();
-        f1.write_all(content).unwrap();
-
-        let mut f2 = File::create(&file2_path).unwrap();
-        f2.write_all(content).unwrap();
+        {
+            let mut f1 = File::create(&file1_path).unwrap();
+            f1.write_all(content).unwrap();
+            f1.sync_all().unwrap();
+        }
+        {
+            let mut f2 = File::create(&file2_path).unwrap();
+            f2.write_all(content).unwrap();
+            f2.sync_all().unwrap();
+        }
 
         let dups = scan_duplicates(dir.path().to_str().unwrap()).unwrap();
         assert_eq!(dups.len(), 1);
         assert_eq!(dups[0].files.len(), 2);
     }
 }
+
