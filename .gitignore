@@ -32,3 +32,7 @@ frontend/dist/
 # Executable outputs
 JazaSort.exe
 JazaSort_New.exe
+
+# Documentation & Specifications
+docs/
+
