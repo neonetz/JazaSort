@@ -1,4 +1,4 @@
-name: Test & Build
+name: Test & Build Multi-Platform
 
 on:
   push:
@@ -8,8 +8,12 @@ on:
 
 jobs:
   test:
-    name: Run Tests
-    runs-on: windows-latest
+    name: Run Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     
     steps:
     - uses: actions/checkout@v4
@@ -21,6 +25,12 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '22'
+
+    - name: Install Linux Dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
     - name: Frontend Tests & Build
       working-directory: ./frontend

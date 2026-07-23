@@ -1,17 +1,34 @@
-name: Build & Release Windows App
+name: Build & Release Multi-Platform Desktop App
 
 on:
   push:
     tags:
-      - 'v*' # Trigger on version tags (e.g., v1.0.0-beta.1)
+      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Build and Release for Windows
-    runs-on: windows-latest
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset_name: JazaSort-Windows.zip
+            target_binary: target/release/jazasort.exe
+            release_name: JazaSort-Portable.exe
+          - os: ubuntu-latest
+            asset_name: JazaSort-Linux.tar.gz
+            target_binary: target/release/jazasort
+            release_name: jazasort-linux
+          - os: macos-latest
+            asset_name: JazaSort-macOS.zip
+            target_binary: target/release/jazasort
+            release_name: jazasort-macos
+
+    runs-on: ${{ matrix.os }}
     
     steps:
     - name: Checkout Code
@@ -25,28 +42,37 @@ jobs:
       with:
         node-version: '22'
 
+    - name: Install Linux Dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
     - name: Build Frontend
       working-directory: ./frontend
       run: |
         npm ci
         npm run build
 
-    - name: Build Rust App Release
+    - name: Build Rust Release Binary
       run: cargo build --release
 
-    - name: Move and Rename Executables for Release
+    - name: Package Binary (Windows)
+      if: matrix.os == 'windows-latest'
       run: |
-        Move-Item "target\release\jazasort.exe" "JazaSort-Portable.exe"
+        Copy-Item "${{ matrix.target_binary }}" "${{ matrix.release_name }}"
+        Compress-Archive -Path "${{ matrix.release_name }}" -DestinationPath "${{ matrix.asset_name }}"
 
-    - name: Create ZIP Archive for Portable Version
-      run: Compress-Archive -Path "JazaSort-Portable.exe" -DestinationPath "JazaSort-Windows.zip"
+    - name: Package Binary (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cp ${{ matrix.target_binary }} ${{ matrix.release_name }}
+        tar -czvf ${{ matrix.asset_name }} ${{ matrix.release_name }}
 
-    - name: Create Release and Upload Artifacts
+    - name: Upload Release Assets
       uses: softprops/action-gh-release@v2
       with:
-        files: |
-          JazaSort-Portable.exe
-          JazaSort-Windows.zip
+        files: ${{ matrix.asset_name }}
         draft: false
         prerelease: contains(github.ref, 'beta') || contains(github.ref, 'alpha')
         generate_release_notes: true

@@ -1,6 +1,7 @@
 # JazaSort
 
-![JazaSort Logo](build/appicon.png)
+![JazaSort Logo](icons/icon.png)
+
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version: Beta](https://img.shields.io/badge/Version-v1.0.0--beta.1-orange.svg)]()
